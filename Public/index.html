@@ -27,7 +27,7 @@
       // Import the functions you need from the SDKs you need
       import { initializeApp } from "https://www.gstatic.com/firebasejs/9.18.0/firebase-app.js";
       import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.18.0/firebase-analytics.js";
-      import { getDatabase, ref, set, child, update, remove } from "https://www.gstatic.com/firebasejs/9.18.0/firebase-database.js";
+      import { getDatabase, ref, set, push, child, update, remove } from "https://www.gstatic.com/firebasejs/9.18.0/firebase-database.js";
       // TODO: Add SDKs for Firebase products that you want to use
       // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -52,15 +52,11 @@
       const queryString = window.location.search;
       console.log(queryString);
 
-      function addDatabase(temp, hum) {
-        set(ref(database, "users/"), {
-          temp: temp,
-          hum: hum,
-        });
-      }
       /* ================== GET PARAMS ========================== */
       const urlParams = new URLSearchParams(queryString);
-      let loc = urlParams.get("loc") == null ? "lokasi_1" : urlParams.get("loc");
+
+      window.loc = urlParams.get("loc") == null ? "lokasi_1" : urlParams.get("loc");
+
       let hum = urlParams.get("hum") == null ? 0 : urlParams.get("hum");
       let temp = urlParams.get("temp") == null ? 0 : urlParams.get("temp");
       let tas = urlParams.get("tas") == null ? 0 : urlParams.get("tas");
@@ -72,13 +68,15 @@
       let tegangan_pzem = urlParams.get("tegangan_pzem") == null ? 0 : urlParams.get("tegangan_pzem");
       let arus_pzem = urlParams.get("arus_pzem") == null ? 0 : urlParams.get("arus_pzem");
 
+      const params = ["kelembaban", "temperatur", "tinggi_air_sungai", "total_tip", "tegangan_ina", "arus_ina", "tegangan_hlw", "arus_hlw", "tegangan_pzem", "arus_pzem"];
+      const values = [hum, temp, tas, tip, tegangan_ina, arus_ina, tegangan_hlw, arus_hlw, tegangan_pzem, arus_pzem];
+
       let sensor_temp;
-      let loc = "lokasi_1";
       switch (loc) {
         case "lokasi_1":
           sensor_temp = "am2320";
           break;
-        case "t":
+        case "lokasi_2":
           sensor_temp = "dht22";
           break;
         case "lokasi_3":
@@ -87,46 +85,59 @@
 
       /* ========================================= */
 
-      const time = new Date();
+      function addData(parameter, value) {
+        update(ref(database, getPath("Log", loc, parameter)), {
+          [getTimestamp()]: value,
+        });
 
+        set(ref(database, getPath("Realtime", loc, parameter)), {
+          [getTimestamp()]: value,
+        });
+      }
+
+      window.time = new Date();
       function getDate() {
-        const time = this.time;
+        const time = window.time;
+        const day = time.getDate();
+        const d = parseInt(day) < 10 ? "0" + day : day;
         const month = time.getMonth();
-        const m = parseInt(month) + 1;
-        const date = time.getDate() + "-" + m + "-" + time.getFullYear();
+        const m = parseInt(month) + 1 < 10 ? "0" + (parseInt(month) + 1).toString() : parseInt(month) + 1;
+        const date = d + "-" + m + "-" + time.getFullYear();
         return date;
       }
 
       function getTimestamp() {
-        const time = this.time;
+        const time = window.time;
+        const hour = time.getHours();
         const min = time.getMinutes();
-        var mins = "";
+        const sec = time.getSeconds();
 
-        if (parseInt(min) < 10) {
-          mins = "0" + min;
-        } else {
-          mins = min;
-        }
+        const h = parseInt(hour) < 10 ? "0" + hour : hour;
+        const m = parseInt(min) < 10 ? "0" + min : min;
+        const s = parseInt(sec) < 10 ? "0" + sec : sec;
 
-        const timestamp = time.getHours() + ":" + mins + ":" + time.getSeconds();
+        const timestamp = h + ":" + m + ":" + s;
         return timestamp;
       }
 
       function getPath(type, location, parameter) {
-        const time = this.time;
+        const time = window.time;
         let path;
         let date_log = getDate();
-        let hour_log = time.getHours();
+        const hour = time.getHours();
+        const hour_log = parseInt(hour) < 10 ? "0" + hour : hour;
         let timestamp = getTimestamp();
         if (type.toLowerCase() == "log") {
-          path = "/" + type + "/" + location + "/" + date_log + "/" + hour_log + "/" + parameter + "/" + timestamp;
+          path = "/" + type + "/" + location + "/" + date_log + "/" + hour_log + "/" + parameter + "/";
         } else if (type.toLowerCase() == "realtime") {
           return "/" + type + "/" + location + "/" + parameter + "/";
         }
         return path;
       }
 
-      addDatabase(temp, hum);
+      for (let i = 0; i < 10; i++) {
+        addData(params[i], values[i]);
+      }
     </script>
   </head>
   <body></body>
