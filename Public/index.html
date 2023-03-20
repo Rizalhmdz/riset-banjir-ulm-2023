@@ -74,23 +74,23 @@
       let sensor_temp;
       switch (loc) {
         case "lokasi_1":
-          sensor_temp = "am2320";
+          sensor_temp = "am2320/";
           break;
         case "lokasi_2":
-          sensor_temp = "dht22";
+          sensor_temp = "dht22/";
           break;
         case "lokasi_3":
-          sensor_temp = "sht20";
+          sensor_temp = "sht20/";
       }
 
       /* ========================================= */
 
-      function addData(parameter, value) {
-        update(ref(database, getPath("Log", loc, parameter)), {
+      function addData(parameter, value, sensor_temp = "") {
+        update(ref(database, getPath("Log", loc, parameter, sensor_temp)), {
           [getTimestamp()]: value,
         });
 
-        set(ref(database, getPath("Realtime", loc, parameter)), {
+        set(ref(database, getPath("Realtime", loc, parameter, sensor_temp)), {
           [getTimestamp()]: value,
         });
       }
@@ -120,7 +120,7 @@
         return timestamp;
       }
 
-      function getPath(type, location, parameter) {
+      function getPath(type, location, parameter, sensor_temp = "") {
         const time = window.time;
         let path;
         let date_log = getDate();
@@ -128,15 +128,15 @@
         const hour_log = parseInt(hour) < 10 ? "0" + hour : hour;
         let timestamp = getTimestamp();
         if (type.toLowerCase() == "log") {
-          path = "/" + type + "/" + location + "/" + date_log + "/" + hour_log + "/" + parameter + "/";
+          path = "/" + type + "/" + location + "/" + date_log + "/" + hour_log + "/" + sensor_temp + parameter + "/";
         } else if (type.toLowerCase() == "realtime") {
-          return "/" + type + "/" + location + "/" + parameter + "/";
+          return "/" + type + "/" + location + "/" + sensor_temp + parameter + "/";
         }
         return path;
       }
 
       for (let i = 0; i < 10; i++) {
-        addData(params[i], values[i]);
+        i === 0 || i == 1 ? addData(params[i], values[i], sensor_temp) : addData(params[i], values[i]);
       }
     </script>
   </head>
