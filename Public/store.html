@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Store data</title>
+
+    <!-- update the version number as needed -->
+    <script defer src="/__/firebase/9.18.0/firebase-app-compat.js"></script>
+    <!-- include only the Firebase features as you need -->
+    <script defer src="/__/firebase/9.18.0/firebase-auth-compat.js"></script>
+    <script defer src="/__/firebase/9.18.0/firebase-database-compat.js"></script>
+    <script defer src="/__/firebase/9.18.0/firebase-firestore-compat.js"></script>
+    <script defer src="/__/firebase/9.18.0/firebase-functions-compat.js"></script>
+    <script defer src="/__/firebase/9.18.0/firebase-messaging-compat.js"></script>
+    <script defer src="/__/firebase/9.18.0/firebase-storage-compat.js"></script>
+    <script defer src="/__/firebase/9.18.0/firebase-analytics-compat.js"></script>
+    <script defer src="/__/firebase/9.18.0/firebase-remote-config-compat.js"></script>
+    <script defer src="/__/firebase/9.18.0/firebase-performance-compat.js"></script>
+    <!-- 
+      initialize the SDK after all desired features are loaded, set useEmulator to false
+      to avoid connecting the SDK to running emulators.
+    -->
+    <script defer src="/__/firebase/init.js?useEmulator=true"></script>
+
+    <script type="module">
+      // Import the functions you need from the SDKs you need
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.18.0/firebase-app.js";
+      import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.18.0/firebase-analytics.js";
+      import { getDatabase, ref, set, push, child, update, remove } from "https://www.gstatic.com/firebasejs/9.18.0/firebase-database.js";
+      // TODO: Add SDKs for Firebase products that you want to use
+      // https://firebase.google.com/docs/web/setup#available-libraries
+
+      // Your web app's Firebase configuration
+      // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+      const firebaseConfig = {
+        apiKey: "AIzaSyCjPtL9Ug9Y2suZhKEX7qwKHGxZ3EFYPIY",
+        authDomain: "risetulm-8a989.firebaseapp.com",
+        databaseURL: "https://risetulm-8a989-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "risetulm-8a989",
+        storageBucket: "risetulm-8a989.appspot.com",
+        messagingSenderId: "201683381421",
+        appId: "1:201683381421:web:130be2280454c46524ea24",
+        measurementId: "G-9M6NHCD37M",
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const analytics = getAnalytics(app);
+
+      const database = getDatabase(app);
+      const queryString = window.location.search;
+      console.log(queryString);
+
+      /* ================== GET PARAMS ========================== */
+      const urlParams = new URLSearchParams(queryString);
+
+      window.loc = urlParams.get("loc") == null ? "lokasi_1" : urlParams.get("loc");
+
+      let hum = urlParams.get("hum") == null ? 0 : urlParams.get("hum");
+      let temp = urlParams.get("temp") == null ? 0 : urlParams.get("temp");
+      let tas = urlParams.get("tas") == null ? 0 : urlParams.get("tas");
+      let tip = urlParams.get("tip") == null ? 0 : urlParams.get("tip");
+      let tegangan_ina = urlParams.get("tegangan_ina") == null ? 0 : urlParams.get("tegangan_ina");
+      let arus_ina = urlParams.get("arus_ina") == null ? 0 : urlParams.get("arus_ina");
+      let tegangan_hlw = urlParams.get("tegangan_hlw") == null ? 0 : urlParams.get("tegangan_hlw");
+      let arus_hlw = urlParams.get("arus_hlw") == null ? 0 : urlParams.get("arus_hlw");
+      let tegangan_pzem = urlParams.get("tegangan_pzem") == null ? 0 : urlParams.get("tegangan_pzem");
+      let arus_pzem = urlParams.get("arus_pzem") == null ? 0 : urlParams.get("arus_pzem");
+
+      const params = ["kelembaban", "temperatur", "tinggi_air_sungai", "total_tip", "tegangan_ina", "arus_ina", "tegangan_hlw", "arus_hlw", "tegangan_pzem", "arus_pzem"];
+      const values = [hum, temp, tas, tip, tegangan_ina, arus_ina, tegangan_hlw, arus_hlw, tegangan_pzem, arus_pzem];
+
+      let sensor_temp;
+      switch (loc) {
+        case "lokasi_1":
+          sensor_temp = "am2320/";
+          break;
+        case "lokasi_2":
+          sensor_temp = "dht22/";
+          break;
+        case "lokasi_3":
+          sensor_temp = "sht20/";
+      }
+
+      /* ========================================= */
+
+      function addData(parameter, value, sensor_temp = "") {
+        update(ref(database, getPath("Log", loc, parameter, sensor_temp)), {
+          [getTimestamp()]: value,
+        });
+
+        set(ref(database, getPath("Realtime", loc, parameter, sensor_temp)), {
+          [getTimestamp()]: value,
+        });
+      }
+
+      window.time = new Date();
+      function getDate() {
+        const time = window.time;
+        const day = time.getDate();
+        const d = parseInt(day) < 10 ? "0" + day : day;
+        const month = time.getMonth();
+        const m = parseInt(month) + 1 < 10 ? "0" + (parseInt(month) + 1).toString() : parseInt(month) + 1;
+        const date = d + "-" + m + "-" + time.getFullYear();
+        return date;
+      }
+
+      function getTimestamp() {
+        const time = window.time;
+        const hour = time.getHours();
+        const min = time.getMinutes();
+        const sec = time.getSeconds();
+
+        const h = parseInt(hour) < 10 ? "0" + hour : hour;
+        const m = parseInt(min) < 10 ? "0" + min : min;
+        const s = parseInt(sec) < 10 ? "0" + sec : sec;
+
+        const timestamp = h + ":" + m + ":" + s;
+        return timestamp;
+      }
+
+      function getPath(type, location, parameter, sensor_temp = "") {
+        const time = window.time;
+        let path;
+        let date_log = getDate();
+        const hour = time.getHours();
+        const hour_log = parseInt(hour) < 10 ? "0" + hour : hour;
+        let timestamp = getTimestamp();
+        if (type.toLowerCase() == "log") {
+          path = "/" + type + "/" + location + "/" + date_log + "/" + hour_log + "/" + sensor_temp + parameter + "/";
+        } else if (type.toLowerCase() == "realtime") {
+          return "/" + type + "/" + location + "/" + sensor_temp + parameter + "/";
+        }
+        return path;
+      }
+
+      for (let i = 0; i < 10; i++) {
+        i === 0 || i == 1 ? addData(params[i], values[i], sensor_temp) : addData(params[i], values[i]);
+      }
+    </script>
+  </head>
+  <body></body>
+</html>
